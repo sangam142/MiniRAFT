@@ -1,0 +1,147 @@
+name: miniraft
+
+services:
+  gateway:
+    build: ./gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - REPLICA_ADDRS=replica1:9001,replica2:9001,replica3:9001,replica4:9001
+      - REPLICA_HTTP=http://replica1:8081,http://replica2:8081,http://replica3:8081,http://replica4:8081
+      - GATEWAY_PORT=8080
+      - GATEWAY_URL=http://gateway:8080
+      - LOG_LEVEL=info
+      - CHAOS_ENABLED=false
+      - INTERNAL_COMMIT_TOKEN=miniraft-internal-dev-token
+      - RAFT_NETWORK=miniraft_raft-net
+    depends_on:
+      replica1:
+        condition: service_healthy
+      replica2:
+        condition: service_healthy
+      replica3:
+        condition: service_healthy
+      replica4:
+        condition: service_healthy
+    networks:
+      - raft-net
+    restart: unless-stopped
+
+  replica1:
+    build: ./replica1
+    environment:
+      - REPLICA_ID=replica1
+      - PEERS=replica2:9001,replica3:9001,replica4:9001
+      - GRPC_PORT=9001
+      - HTTP_PORT=8081
+      - DATA_DIR=/data
+      - LOG_LEVEL=info
+      - GATEWAY_URL=http://gateway:8080
+      - INTERNAL_COMMIT_TOKEN=miniraft-internal-dev-token
+    volumes:
+      - ./logs/replica1:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - raft-net
+    restart: unless-stopped
+    # Replica ports exposed in dev override (docker-compose.dev.yml):
+    #   - "9001:9001"  # gRPC
+    #   - "8081:8081"  # HTTP status/stroke/entries
+
+  replica2:
+    build: ./replica2
+    environment:
+      - REPLICA_ID=replica2
+      - PEERS=replica1:9001,replica3:9001,replica4:9001
+      - GRPC_PORT=9001
+      - HTTP_PORT=8081
+      - DATA_DIR=/data
+      - LOG_LEVEL=info
+      - GATEWAY_URL=http://gateway:8080
+      - INTERNAL_COMMIT_TOKEN=miniraft-internal-dev-token
+    volumes:
+      - ./logs/replica2:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - raft-net
+    restart: unless-stopped
+    # Replica ports exposed in dev override (docker-compose.dev.yml):
+    #   - "9002:9001"  # gRPC
+    #   - "8082:8081"  # HTTP status/stroke/entries
+
+  replica3:
+    build: ./replica3
+    environment:
+      - REPLICA_ID=replica3
+      - PEERS=replica1:9001,replica2:9001,replica4:9001
+      - GRPC_PORT=9001
+      - HTTP_PORT=8081
+      - DATA_DIR=/data
+      - LOG_LEVEL=info
+      - GATEWAY_URL=http://gateway:8080
+      - INTERNAL_COMMIT_TOKEN=miniraft-internal-dev-token
+    volumes:
+      - ./logs/replica3:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - raft-net
+    restart: unless-stopped
+    # Replica ports exposed in dev override (docker-compose.dev.yml):
+    #   - "9003:9001"  # gRPC
+    #   - "8083:8081"  # HTTP status/stroke/entries
+
+  replica4:
+    build: ./replica
+    environment:
+      - REPLICA_ID=replica4
+      - PEERS=replica1:9001,replica2:9001,replica3:9001
+      - GRPC_PORT=9001
+      - HTTP_PORT=8081
+      - DATA_DIR=/data
+      - LOG_LEVEL=info
+      - GATEWAY_URL=http://gateway:8080
+      - INTERNAL_COMMIT_TOKEN=miniraft-internal-dev-token
+    volumes:
+      - ./logs/replica4:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - raft-net
+    restart: unless-stopped
+    # Replica ports exposed in dev override (docker-compose.dev.yml):
+    #   - "9004:9001"  # gRPC
+    #   - "8084:8081"  # HTTP status/stroke/entries
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    networks:
+      - raft-net
+    depends_on:
+      gateway:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  raft-net:
+    driver: bridge

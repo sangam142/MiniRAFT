@@ -1,0 +1,23 @@
+# Go
+*/tmp/
+*/vendor/
+*.exe
+
+# Logs and WAL (keep directory, not files)
+logs/replica1/*.log
+logs/replica2/*.log
+logs/replica3/*.log
+logs/replica4/*.log
+logs/gateway/*.log
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Docker
+.docker/

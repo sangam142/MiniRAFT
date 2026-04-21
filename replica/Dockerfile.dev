@@ -1,0 +1,15 @@
+FROM golang:1.22-alpine
+
+RUN apk add --no-cache curl && \
+    go install github.com/air-verse/air@latest
+
+WORKDIR /app/src
+
+# Pre-download dependencies using the committed go.mod/go.sum.
+# (The source will be bind-mounted at runtime, but we need deps cached.)
+COPY go.mod go.sum* ./
+RUN go mod download || true
+
+EXPOSE 9001 8081
+
+CMD ["air", "-c", ".air.toml"]

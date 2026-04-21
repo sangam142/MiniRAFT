@@ -1,0 +1,79 @@
+# Development overrides — use with: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+services:
+  replica1:
+    build:
+      context: ./replica1
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./replica1:/app/src      # bind-mount for air hot-reload (replica1/ → replica/)
+      - ./logs/replica1:/data
+    ports:
+      - "9001:9001"
+      - "8081:8081"
+    environment:
+      - LOG_LEVEL=debug
+
+  replica2:
+    build:
+      context: ./replica2
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./replica2:/app/src      # bind-mount for air hot-reload (replica2/ → replica/)
+      - ./logs/replica2:/data
+    ports:
+      - "9002:9001"
+      - "8082:8081"
+    environment:
+      - LOG_LEVEL=debug
+
+  replica3:
+    build:
+      context: ./replica3
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./replica3:/app/src      # bind-mount for air hot-reload (replica3/ → replica/)
+      - ./logs/replica3:/data
+    ports:
+      - "9003:9001"
+      - "8083:8081"
+    environment:
+      - LOG_LEVEL=debug
+
+  replica4:
+    build:
+      context: ./replica
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./replica:/app/src
+      - ./logs/replica4:/data
+    ports:
+      - "9004:9001"
+      - "8084:8081"
+    environment:
+      - LOG_LEVEL=debug
+
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./gateway:/app/src
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - LOG_LEVEL=debug
+      - CHAOS_ENABLED=true
+      - CHAOS_TOKEN=miniraft-chaos-dev-token
+      - RAFT_NETWORK=miniraft_raft-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_GATEWAY_URL=http://localhost:8080
+      - VITE_CHAOS_TOKEN=miniraft-chaos-dev-token
