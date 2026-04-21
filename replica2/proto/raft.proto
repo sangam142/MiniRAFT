@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package raft;
+
+option go_package = "./proto;raft";
+
+// ─── RequestVote ─────────────────────────────────────────────────────────────
+message VoteRequest {
+  int64  term           = 1; // candidate's term
+  string candidate_id   = 2; // e.g. "replica1"
+  int64  last_log_index = 3; // index of candidate's last log entry
+  int64  last_log_term  = 4; // term of candidate's last log entry
+}
+
+message VoteResponse {
+  int64 term         = 1; // receiver's currentTerm (for candidate to update)
+  bool  vote_granted = 2;
+}
+
+// ─── AppendEntries ────────────────────────────────────────────────────────────
+message AppendEntriesRequest {
+  int64            term          = 1;
+  string           leader_id     = 2;
+  int64            prev_log_index = 3;
+  int64            prev_log_term  = 4;
+  repeated LogEntry entries       = 5;
+  int64            leader_commit  = 6;
+}
+
+message AppendEntriesResponse {
+  int64 term           = 1;
+  bool  success        = 2;
+  int64 conflict_index = 3; // follower's log length if rejected
+}
+
+// ─── Heartbeat ────────────────────────────────────────────────────────────────
+message HeartbeatRequest {
+  int64  term         = 1;
+  string leader_id    = 2;
+  int64  commit_index = 3;
+}
+
+message HeartbeatResponse {
+  int64 term    = 1;
+  bool  success = 2;
+}
+
+// ─── SyncLog ──────────────────────────────────────────────────────────────────
+message SyncLogRequest {
+  int64  from_index = 1; // follower requests entries from this index
+  string replica_id = 2;
+  int64  term       = 3; // caller's current term; receiver rejects if stale
+}
+
+message SyncLogResponse {
+  repeated LogEntry entries      = 1;
+  int64             commit_index = 2;
+}
+
+// ─── LogEntry ─────────────────────────────────────────────────────────────────
+message LogEntry {
+  int64  index     = 1;
+  int64  term      = 2;
+  string type      = 3; // "STROKE" | "UNDO_COMPENSATION"
+  string stroke_id = 4; // UUID v4
+  string user_id   = 5;
+  bytes  data      = 6; // JSON-encoded StrokeData
+  int64  timestamp = 7; // Unix ms
+}
+
+// ─── RPC Service ──────────────────────────────────────────────────────────────
+service RaftService {
+  rpc RequestVote    (VoteRequest)          returns (VoteResponse);
+  rpc AppendEntries  (AppendEntriesRequest) returns (AppendEntriesResponse);
+  rpc Heartbeat      (HeartbeatRequest)     returns (HeartbeatResponse);
+  rpc SyncLog        (SyncLogRequest)       returns (SyncLogResponse);
+}
